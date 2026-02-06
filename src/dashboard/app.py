@@ -24,6 +24,9 @@ def load_data():
     # Read and combine them
     dfs = [pd.read_parquet(f) for f in files]
     full_df = pd.concat(dfs, ignore_index=True)
+
+    # Convert milliseconds to readable datetime
+    full_df['timestamp'] = pd.to_datetime(full_df['timestamp'], unit='ms')
     
     # Sort by time so the chart looks right
     full_df = full_df.sort_values("timestamp")
@@ -55,17 +58,15 @@ while True:
                 value=len(df)
             )
             
-            # Show the Chart
             st.markdown("### Price Trend (Last 1 Hour)")
-            # We set 'timestamp' as the index so Streamlit knows it's the X-axis
+            # set 'timestamp' as the index
             st.line_chart(df.set_index("timestamp")['price'])
             
-            # Show Raw Data (Optional)
+            # Show Raw Data
             with st.expander("View Raw Data"):
                 st.dataframe(df.tail(10))
         
         else:
             st.warning("Waiting for data... (Is your Producer/Consumer running?)")
 
-    # Wait 2 seconds before refreshing the screen
     time.sleep(2)
