@@ -14,12 +14,12 @@ x-airflow-common:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
-    - ./data:/opt/airflow/data  # Mount data so Airflow can save to your Lake
+    - ./data:/opt/airflow/data  
   depends_on:
     - postgres
 
 services:
-  # --- 1. Real-Time Layer (Kafka) ---
+  # Real-Time Layer (Kafka)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     environment:
@@ -51,7 +51,7 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
 
-  # --- 2. Orchestration Layer (Airflow) ---
+  # Orchestration Layer (Airflow)
   postgres:
     image: postgres:13
     environment:
