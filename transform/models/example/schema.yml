@@ -1,0 +1,12 @@
+
+version: 2
+
+sources:
+  - name: crypto_sources
+    schema: main
+    tables:
+      - name: raw_bitcoin
+        description: "Raw daily bitcoin data from CoinGecko"
+        meta:
+          # This is a custom metadata field that we can use in our dbt models
+          external_location: "read_parquet('../data/raw/bitcoin_data_lake/**/*.parquet')"

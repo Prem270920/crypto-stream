@@ -1,0 +1,11 @@
+crypto_transform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # This file will become "Data Warehouse"
+      path: '../data/crypto_warehouse.duckdb'
+      extensions: 
+        - parquet
+      # This setting allow to read from the parent data folder
+      external_root: '../data'
