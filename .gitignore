@@ -6,3 +6,12 @@ data/
 __pycache__/
 *.pyc
 .DS_Store
+
+# --- Airflow Logs ---
+logs/
+*.log
+
+# --- dbt build artifacts ---
+transform/target/
+transform/dbt_packages/
+transform/logs/
