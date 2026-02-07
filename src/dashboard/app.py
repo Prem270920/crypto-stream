@@ -2,71 +2,96 @@ import streamlit as st
 import pandas as pd
 import glob
 import time
+import duckdb
+import plotly.express as px
 
 st.set_page_config(
-    page_title="CryptoStream Real-Time",
-    page_icon="📈",
+    page_title="CryptoStream: Lambda Architecture",
+    page_icon="⚡",
     layout="wide"
 )
 
-st.title("Bitcoin Real-Time Lakehouse")
+st.title("⚡ CryptoStream: Real-Time & Historical")
 
-DATA_DIR = "data/processed/stream_history/*.parquet"
+# Data Sources
+STREAM_DIR = "data/processed/stream_history/*.parquet"
+WAREHOUSE_DB = "data/crypto_warehouse.duckdb"
 
-# This function reads ALL the mini-batches and glues them together.
-def load_data():
-    # Find all parquet files in the folder
-    files = glob.glob(DATA_DIR)
-    
+# function A: The Hot Path
+def load_live_data():
+    files = glob.glob(STREAM_DIR)
     if not files:
         return pd.DataFrame()
     
-    # Read and combine them
     dfs = [pd.read_parquet(f) for f in files]
     full_df = pd.concat(dfs, ignore_index=True)
-
-    # Convert milliseconds to readable datetime
     full_df['timestamp'] = pd.to_datetime(full_df['timestamp'], unit='ms')
-    
-    # Sort by time so the chart looks right
-    full_df = full_df.sort_values("timestamp")
-    return full_df
+    return full_df.sort_values("timestamp")
 
+# function B: The Cold Path
+def load_historical_trend():
+    # connect to the DuckDB file dbt created
+    con = duckdb.connect(WAREHOUSE_DB, read_only=True)
+    
+    query = """
+    SELECT metric_date, close_price, moving_avg_7d 
+    FROM bitcoin_weekly_trend 
+    ORDER BY metric_date DESC
+    LIMIT 30
+    """
+    df = con.sql(query).df()
+    con.close()
+    return df
+
+
+# Layout
+col1, col2 = st.columns(2)
 
 # The Loop (Auto-Refresh)
 placeholder = st.empty()
 
 while True:
-    with placeholder.container():
-        df = load_data()
-        
-        if not df.empty:
-            # Calculate KPIs
-            latest_price = df.iloc[-1]['price']
-            start_price = df.iloc[0]['price']
-            price_change = latest_price - start_price
+    # A. Fetch Live Data
+    live_df = load_live_data()
+    
+    # B. Fetch Warehouse Data (Only need to do this once effectively, but we'll refresh)
+    try:
+        hist_df = load_historical_trend()
+        warehouse_status = "🟢 Online"
+    except Exception as e:
+        hist_df = pd.DataFrame()
+        warehouse_status = f"🔴 Offline ({str(e)})"
 
-            # Show Big Numbers (Metrics)
-            kpi1, kpi2, kpi3 = st.columns(3)
-            kpi1.metric(
-                label="Current Price (USD)", 
-                value=f"${latest_price:,.2f}",
-                delta=f"{price_change:,.2f}"
-            )
-            kpi2.metric(
-                label="Total Data Points", 
-                value=len(df)
-            )
+    with placeholder.container():
+        # --- LEFT SIDE: THE TRADER VIEW (Real-Time) ---
+        with col1:
+            st.header(f"🚀 Live Market (Speed Layer)")
+            if not live_df.empty:
+                latest = live_df.iloc[-1]
+                st.metric("Live Price", f"${latest['price']:,.2f}")
+                
+                # Use Plotly for a better chart
+                fig = px.line(live_df, x='timestamp', y='price', title='Last Hour Volatility')
+                fig.update_layout(height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Waiting for live data...")
+
+        # --- RIGHT SIDE: THE ANALYST VIEW (Historical) ---
+        with col2:
+            st.header(f"📊 Market Trend (Batch Layer)")
+            st.caption(f"Warehouse Status: {warehouse_status}")
             
-            st.markdown("### Price Trend (Last 1 Hour)")
-            # set 'timestamp' as the index
-            st.line_chart(df.set_index("timestamp")['price'])
-            
-            # Show Raw Data
-            with st.expander("View Raw Data"):
-                st.dataframe(df.tail(10))
-        
-        else:
-            st.warning("Waiting for data... (Is your Producer/Consumer running?)")
+            if not hist_df.empty:
+                latest_trend = hist_df.iloc[0]
+                st.metric("7-Day Moving Avg", f"${latest_trend['moving_avg_7d']:,.2f}")
+                
+                # Multi-line chart: Price vs Moving Average
+                fig2 = px.line(hist_df, x='metric_date', y=['close_price', 'moving_avg_7d'], 
+                               title='30-Day Trend Analysis', color_discrete_map={"moving_avg_7d": "orange", "close_price": "blue"})
+                fig2.update_layout(height=400)
+                st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.info("Run 'dbt run' to populate the warehouse!")
 
     time.sleep(2)
