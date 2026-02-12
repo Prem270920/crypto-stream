@@ -17,7 +17,7 @@ st.title("⚡ CryptoStream: Real-Time & Historical")
 STREAM_DIR = "data/processed/stream_history/*.parquet"
 WAREHOUSE_DB = "data/crypto_warehouse.duckdb"
 
-# function A: The Hot Path
+# The Hot Path
 def load_live_data():
     files = glob.glob(STREAM_DIR)
     if not files:
@@ -28,7 +28,7 @@ def load_live_data():
     full_df['timestamp'] = pd.to_datetime(full_df['timestamp'], unit='ms')
     return full_df.sort_values("timestamp")
 
-# function B: The Cold Path
+# The Cold Path
 def load_historical_trend():
     # connect to the DuckDB file dbt created
     con = duckdb.connect(WAREHOUSE_DB, read_only=True)
@@ -43,41 +43,39 @@ def load_historical_trend():
     con.close()
     return df
 
-
-# Layout
 col1, col2 = st.columns(2)
 
-# The Loop (Auto-Refresh)
+# We use a placeholder to allow for dynamic updates without re-rendering the entire page every time. 
+# This way we can fetch live data and historical data in a loop and update the relevant
 placeholder = st.empty()
 
 while True:
-    # A. Fetch Live Data
+    # Fetch Live Data
     live_df = load_live_data()
     
-    # B. Fetch Warehouse Data (Only need to do this once effectively, but we'll refresh)
+    # Fetch Warehouse Data 
     try:
         hist_df = load_historical_trend()
-        warehouse_status = "🟢 Online"
+        warehouse_status = "Online"
     except Exception as e:
         hist_df = pd.DataFrame()
-        warehouse_status = f"🔴 Offline ({str(e)})"
+        warehouse_status = f"Offline ({str(e)})"
 
     with placeholder.container():
-        # --- LEFT SIDE: THE TRADER VIEW (Real-Time) ---
+        # THE TRADER VIEW (Real-Time)
         with col1:
-            st.header(f"🚀 Live Market (Speed Layer)")
+            st.header(f"Live Market (Speed Layer)")
             if not live_df.empty:
                 latest = live_df.iloc[-1]
                 st.metric("Live Price", f"${latest['price']:,.2f}")
                 
-                # Use Plotly for a better chart
                 fig = px.line(live_df, x='timestamp', y='price', title='Last Hour Volatility')
                 fig.update_layout(height=400)
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("Waiting for live data...")
 
-        # --- RIGHT SIDE: THE ANALYST VIEW (Historical) ---
+        # THE ANALYST VIEW (Historical)
         with col2:
             st.header(f"📊 Market Trend (Batch Layer)")
             st.caption(f"Warehouse Status: {warehouse_status}")
@@ -86,7 +84,7 @@ while True:
                 latest_trend = hist_df.iloc[0]
                 st.metric("7-Day Moving Avg", f"${latest_trend['moving_avg_7d']:,.2f}")
                 
-                # Multi-line chart: Price vs Moving Average
+                # Price vs Moving Average
                 fig2 = px.line(hist_df, x='metric_date', y=['close_price', 'moving_avg_7d'], 
                                title='30-Day Trend Analysis', color_discrete_map={"moving_avg_7d": "orange", "close_price": "blue"})
                 fig2.update_layout(height=400)
