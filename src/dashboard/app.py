@@ -4,6 +4,7 @@ import glob
 import time
 import duckdb
 import plotly.express as px
+import uuid
 
 st.set_page_config(
     page_title="CryptoStream: Lambda Architecture",
@@ -71,7 +72,8 @@ while True:
                 
                 fig = px.line(live_df, x='timestamp', y='price', title='Last Hour Volatility')
                 fig.update_layout(height=400)
-                st.plotly_chart(fig, use_container_width=True)
+                # We use a unique key for the live chart to ensure it updates correctly without caching issues.
+                st.plotly_chart(fig, use_container_width=True, key=f"live_chart_{uuid.uuid4()}")
             else:
                 st.warning("Waiting for live data...")
 
@@ -88,7 +90,8 @@ while True:
                 fig2 = px.line(hist_df, x='metric_date', y=['close_price', 'moving_avg_7d'], 
                                title='30-Day Trend Analysis', color_discrete_map={"moving_avg_7d": "orange", "close_price": "blue"})
                 fig2.update_layout(height=400)
-                st.plotly_chart(fig2, use_container_width=True)
+                # We use a unique key for the historical chart to ensure it updates correctly without caching issues.
+                st.plotly_chart(fig2, use_container_width=True, key=f"history_chart_{uuid.uuid4()}")
             else:
                 st.info("Run 'dbt run' to populate the warehouse!")
 
