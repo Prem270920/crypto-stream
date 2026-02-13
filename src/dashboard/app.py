@@ -5,6 +5,10 @@ import time
 import duckdb
 import plotly.express as px
 import uuid
+from datetime import timedelta
+import plotly.graph_objects as go
+from statsmodels.tsa.arima.model import ARIMA
+
 
 st.set_page_config(
     page_title="CryptoStream: Lambda Architecture",
