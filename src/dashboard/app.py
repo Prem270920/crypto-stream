@@ -44,7 +44,6 @@ def load_historical_trend():
     con.close()
     return df
 
-col1, col2 = st.columns(2)
 
 # We use a placeholder to allow for dynamic updates without re-rendering the entire page every time. 
 # This way we can fetch live data and historical data in a loop and update the relevant
@@ -63,6 +62,8 @@ while True:
         warehouse_status = f"Offline ({str(e)})"
 
     with placeholder.container():
+
+        col1, col2 = st.columns(2)
         # THE TRADER VIEW (Real-Time)
         with col1:
             st.header(f"Live Market (Speed Layer)")
