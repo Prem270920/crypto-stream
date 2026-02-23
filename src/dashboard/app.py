@@ -147,15 +147,27 @@ while True:
                 if not forecast_df.empty:
                     # Connect the last actual point to the first forecast point so the line doesn't break
                     connect_x = [hist_df['metric_date'].iloc[0], forecast_df['metric_date'].iloc[0]]
+
+                    # Upper Bound 
+                    fig2.add_trace(go.Scatter(
+                        x=forecast_df['metric_date'], y=forecast_df['upper_bound'],
+                        mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'
+                    ))
+                    # Lower bound
+                    fig2.add_trace(go.Scatter(
+                        x=forecast_df['metric_date'], y=forecast_df['lower_bound'],
+                        mode='lines', fill='tonexty', fillcolor='rgba(239, 35, 60, 0.2)', 
+                        line=dict(width=0), name='95% Confidence', hoverinfo='skip'
+                    ))
+                    
+                    #the main prediction line on top
                     connect_y = [hist_df['close_price'].iloc[0], forecast_df['forecast_price'].iloc[0]]
                     fig2.add_trace(go.Scatter(x=connect_x, y=connect_y, mode='lines', showlegend=False, line=dict(color='#ef233c', dash='dash')))
-                    
-                    # Plot the rest of the forecast
                     fig2.add_trace(go.Scatter(x=forecast_df['metric_date'], y=forecast_df['forecast_price'],
                                               mode='lines', name='7-Day Prediction', line=dict(color='#ef233c', dash='dash')))
                     
+                    # Update Metric
                     next_day_pred = forecast_df.iloc[0]['forecast_price']
-
                     st.metric(label="Predicted Price (Tomorrow)", value=f"${next_day_pred:,.2f}", 
                               delta=f"${next_day_pred - latest_trend['close_price']:,.2f} from today")
 
