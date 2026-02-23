@@ -64,7 +64,11 @@ def generate_forecast(df):
         model_fit = model.fit()
 
         #Predict next 7 days
-        forecast = model_fit.forecast(steps=7)
+        forecast_obj = model_fit.get_forecast(steps=7)
+        pred_mean = forecast_obj.predicted_mean
+
+        # Get 95% Confidence Intervals (alpha=0.05)
+        conf_int = forecast_obj.conf_int(alpha=0.05)
 
         #Create Future Dates
         last_date = train_df['metric_date'].iloc[-1]
@@ -72,7 +76,9 @@ def generate_forecast(df):
 
         forecast_df = pd.DataFrame({
             'metric_date': pd.to_datetime(future_dates),
-            'forecast_price': forecast
+            'forecast_price': pred_mean,
+            'lower_bound': conf_int[:, 0], # Column 0 is lower bound
+            'upper_bound': conf_int[:, 1]  # Column 1 is upper bound
         })
 
         return forecast_df
