@@ -47,5 +47,12 @@ Start the Streamlit application to view the live market and ML forecasts:
 ```bash
 streamlit run src/dashboard/app.py
 ```
+## 📸 Dashboard Preview
+
+!CryptoStream Dashboard<img width="1492" height="846" alt="Dashboard_Preview_ss" src="https://github.com/user-attachments/assets/f0d6cb43-fa19-420c-8f8f-26151e6c8cc5" />
+
+*Left: Real-time Kafka stream. Right: DuckDB historical batch layer with ARIMA 7-day forecast.*
+
 ## Machine Learning Engine
 The batch layer utilizes an Auto-Regressive Integrated Moving Average ARIMA(5,1,0) model to project future asset prices based on the 7-day moving average. The dashboard renders these projections inside a 95% statistical confidence interval to simulate professional quantitative research environments.
+
